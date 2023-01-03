@@ -6,6 +6,7 @@
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
 
+// frame buffer inlt
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
