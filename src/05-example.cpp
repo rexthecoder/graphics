@@ -5,7 +5,6 @@
 #include <math.h>
 #include <chrono>
 
-
 // Resize window
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
@@ -16,26 +15,29 @@ const GLchar *vertexSource = R"glsl(
     #version 150 core
 
     in vec2 position;
+    in vec3 color;
+    out vec3 Color;
 
     void main(){
+        Color = color;
         gl_Position = vec4(position, 0.0, 1.0);
     }
 )glsl";
 
 const GLchar *fragmentSource = R"glsl(
     #version 150 core
-    uniform vec3 triangleColor;
-
+    in vec3 Color;
     out vec4 outColor;
 
+
      void main(){
-        outColor = vec4(triangleColor, 1.0);
+        outColor = vec4(Color, 1.0);
      }
 )glsl";
 
 int main()
 {
-    auto t_start = std::chrono::high_resolution_clock::now();
+    // auto t_start = std::chrono::high_resolution_clock::now();
 
     // configuration
     glfwInit();
@@ -65,16 +67,30 @@ int main()
         return -1;
     }
 
-
-
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
+     // Create an element array
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+
+
+ 
     GLfloat vertices[] = {
-        0.0f, 0.5f,
-        0.5f, -0.5f,
-        -0.5f, -0.5f};
+        -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // Top-left
+         0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // Top-right
+         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // Bottom-right
+        -0.5f, -0.5f, 1.0f, 1.0f, 1.0f  // Bottom-left
+    };
+
+    GLuint elements[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -103,11 +119,13 @@ int main()
 
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
 
-    GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
+    GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+    glEnableVertexAttribArray(colAttrib);
+    glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void *)(2 * sizeof(GLfloat)));
 
-
+    // GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
 
     // Render loop
     while (!glfwWindowShouldClose(window))
@@ -115,21 +133,30 @@ int main()
         processInput(window);
 
         // Clear the screen to black
-        glClearColor(0.5f, 0.6f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto t_now = std::chrono::high_resolution_clock::now();
+        // auto t_now = std::chrono::high_resolution_clock::now();
 
-        float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+        // float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
 
-        glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
+        // glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
 
         // Draw a rectangle
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwPollEvents();
         glfwSwapBuffers(window);
     }
+    // Delete all shaders
+    glDeleteProgram(shaderProgram);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(vertexShader);
+
+    glDeleteBuffers(1, &vbo);
+
+    // glDeleteVertexArrays(1, &vao);
 
     glfwTerminate();
     return 0;
